@@ -16,15 +16,29 @@
  */
 package org.jboss.as.quickstarts.cluster.hasingleton.service.ejb;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Properties;
+
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.ejb.EJB;
 import javax.ejb.ScheduleExpression;
 import javax.ejb.Singleton;
+import javax.ejb.Startup;
 import javax.ejb.Timeout;
 import javax.ejb.Timer;
 import javax.ejb.TimerConfig;
 import javax.ejb.TimerService;
+import javax.naming.Context;
+import javax.naming.NamingException;
 
+import org.jboss.as.naming.InitialContext;
 import org.jboss.logging.Logger;
+import org.wildfly.clustering.group.Group;
+import org.wildfly.clustering.group.Node;
 
 
 /**
@@ -33,14 +47,44 @@ import org.jboss.logging.Logger;
  * @author <a href="mailto:wfink@redhat.com">Wolf-Dieter Fink</a>
  */
 @Singleton
+@Startup
 public class SchedulerBean implements Scheduler {
     private static Logger LOGGER = Logger.getLogger(SchedulerBean.class);
     @Resource
     private TimerService timerService;
 
+    @Resource(lookup = "java:jboss/clustering/group/server")  
+    private Group channelGroup;   
+
+    @EJB
+    RegisterClusterListener registerClusterListener;
+    
+    List<String> serverPriorities =new ArrayList<String>(
+    	    Arrays.asList("server-one", "server-two", "server-three"));
+    
     @Timeout
     public void scheduler(Timer timer) {
-        LOGGER.info("HASingletonTimer: Info=" + timer.getInfo());
+    	
+        if(registerClusterListener.isMaster())
+        {
+        	LOGGER.info("Primary HASingletonTimer on server ");
+        }
+        else
+        {
+        	LOGGER.info("Slave node.");
+       	
+        }
+        
+        
+    }
+    @PostConstruct
+    public void postConstruct()
+    {
+        LOGGER.info("postConstruct HATimerService");
+        
+        serverPriorities.add("server-one");
+        initialize("local");
+   	
     }
 
     @Override
