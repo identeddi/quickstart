@@ -32,38 +32,36 @@ public class MyListenerClusterGroupChanged implements Listener {
     	String serverName = System.getProperty("jboss.node.name");
     	serverName = serverName.contains(":") ? serverName.split(":")[1] : serverName;
 
-    	int priorityMyServer = serverPriorities.indexOf(serverName);
-    	priorityMyServer = priorityMyServer == -1 ? 100 : priorityMyServer;
-    	int priorityHighestActiveServer = 120;
-    	
-        for (Node node: curr)
+    	int position = -1;
+        for (int i = 0;i<curr.size();i++)
         {
+        	Node node = curr.get(i);
         	String nodeName = node.getName().split("/")[0];
         	
         	nodeName = nodeName.contains(":") ? nodeName.split(":")[1] : nodeName;
-        	if(!serverName.equals(nodeName))
+        	if(serverName.equals(nodeName))
         	{
-	        	if(serverPriorities.contains(nodeName));
-	        	{
-	        		priorityHighestActiveServer= serverPriorities.indexOf(nodeName);
-	            	LOGGER.info("New priorityHighestActiveServer " + priorityHighestActiveServer + " node name " + nodeName);
-	        	}
+	        	position = i;
         	}
         	System.out.println(nodeName + " " + node.getSocketAddress());
         }
-        if(priorityMyServer < priorityHighestActiveServer)
+    	System.out.println("node position: " + position);
+        
+    	
+        if(position == 0)
         {
         	LOGGER.info("Primary HASingleton on server " + serverName);
         	master = true;
         }
         else
         {
-        	LOGGER.info("Slave node. Primary Server is " + priorityHighestActiveServer + "Servername " + serverName);
+        	LOGGER.info("Slave node.");
         	master = false;
         }
+       
  
     }
-
+ 
 	public boolean isMaster() {
 		return master;
 	}

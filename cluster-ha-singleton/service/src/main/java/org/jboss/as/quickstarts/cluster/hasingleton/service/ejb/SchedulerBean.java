@@ -56,16 +56,20 @@ public class SchedulerBean implements Scheduler {
     @Resource(lookup = "java:jboss/clustering/group/server")  
     private Group channelGroup;   
 
-    @EJB
-    RegisterClusterListener registerClusterListener;
+    MyListenerClusterGroupChanged myListenerClusterGroupChanged = new MyListenerClusterGroupChanged();;
     
-    List<String> serverPriorities =new ArrayList<String>(
-    	    Arrays.asList("server-one", "server-two", "server-three"));
-    
+    List<Node> prevList = new ArrayList<>();
     @Timeout
     public void scheduler(Timer timer) {
+    	List<Node> newList = channelGroup.getNodes();
+    	      
+    	if(!prevList.equals(newList))
+    	{
+    		myListenerClusterGroupChanged.membershipChanged(prevList,newList,false);
+    	}
+    	prevList = newList;
     	
-        if(registerClusterListener.isMaster())
+    	if(myListenerClusterGroupChanged.isMaster())
         {
         	LOGGER.info("Primary HASingletonTimer on server ");
         }
@@ -81,8 +85,13 @@ public class SchedulerBean implements Scheduler {
     public void postConstruct()
     {
         LOGGER.info("postConstruct HATimerService");
-        
-        serverPriorities.add("server-one");
+    	List<Node> newList = channelGroup.getNodes();
+	      
+    	if(!prevList.equals(newList))
+    	{
+    		myListenerClusterGroupChanged.membershipChanged(prevList,newList,false);
+    	}
+    	prevList = newList;
         initialize("local");
    	
     }
